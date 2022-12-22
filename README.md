@@ -26,7 +26,7 @@
 
 ## 🧐 About <a name = "about"></a>
 
-Write about 1-2 paragraphs describing the purpose of your project.
+This project employs a PyTorch-based orthogonal NeRF model, and utilizes the function’s density output as a data filter to gather 3D spatial data. This is achieved by training the network on a dataset of scene view images, and then using the trained network to predict the 3D point cloud for the given input scene.
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
