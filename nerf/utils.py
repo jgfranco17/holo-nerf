@@ -12,7 +12,7 @@ to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
 
 
 # Positional encoding
-class Embedder:
+class Embedder(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.create_embedding_fn()
@@ -67,7 +67,28 @@ def get_embedder(multires, i=0):
 class NeRF(nn.Module):
     def __init__(self, D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips=[4], use_viewdirs=False):
         """ 
-        Main architecture for NeRF model.
+        Main architecture for NeRF model. This class implements a NRF model, 
+        which is a deep neural network that predicts a radiance field given 
+        a set of input views. The NRF model consists of a series of convolutional 
+        layers and skip connections, which are combined using element-wise addition.
+        
+        The input to the NRF model is a tensor of shape (batch_size, input_ch_views, H, W),
+        where input_ch_views is the number of input views and (H, W) is the spatial
+        resolution of each view. The output of the NRF model is a tensor of shape
+        (batch_size, output_ch, H, W), where output_ch is the number of output channels.
+        
+        Args:
+            D (int, optional): Number of convolutional layers in the NRF model.
+                Default is 8.
+            W (int, optional): Number of filters in each convolutional layer.
+                Default is 256.
+            input_ch (int, optional): Number of input channels. Default is 3.
+            input_ch_views (int, optional): Number of input views. Default is 3.
+            output_ch (int, optional): Number of output channels. Default is 4.
+            skips (list, optional): List of indices of convolutional layers to skip
+                in the skip connections. Default is [4].
+            use_viewdirs (bool, optional): Whether to use view directions as input to
+                the NRF model. Default is False.
         """
         super(NeRF, self).__init__()
         self.D = D
