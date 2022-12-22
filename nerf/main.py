@@ -468,8 +468,6 @@ def main():
     W = args.img_W
     
     view_num = args.angRes
-    trainset_dir = args.trainset_dir
-    num_epochs = args.num_epochs
     near = args.near
     far = args.far
 
@@ -484,7 +482,7 @@ def main():
         with open(f, 'w') as file:
             file.write(open(args.config, 'r').read())
 
-    # Create nerf model
+    # Create NeRF model
     render_kwargs_train, render_kwargs_test, start_epoch, grad_vars, optimizer = create_nerf(args)
 
     bds_dict = {
@@ -497,7 +495,6 @@ def main():
     render_kwargs_test.update(bds_dict)
 
     times = 0
-    times2 = 0
     for v in tqdm(range(view_num)):
         for u in range(view_num):
             start = time.time()
