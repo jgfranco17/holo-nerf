@@ -110,5 +110,5 @@ __pycache__
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
-.pyre/
+# Log files
+*.log
