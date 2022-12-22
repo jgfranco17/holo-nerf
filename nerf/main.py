@@ -42,9 +42,11 @@ def batchify(fn, chunk):
     """
     if chunk is None:
         return fn
-    def ret(inputs):
+    
+    def modified_function(inputs):
         return torch.cat([fn(inputs[i:i+chunk]) for i in range(0, inputs.shape[0], chunk)], 0)
-    return ret
+    
+    return modified_function
 
 
 def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, netchunk=1024*64):
@@ -510,26 +512,19 @@ def main():
                     rgb, depth, _ = render(val_inp_t[b_size*b:b_size*(b+1)]*1, chunk = args.chunk, use_viewdirs=args.use_viewdirs, **render_kwargs_test)
                     out.append(rgb)
                     depths.append(depth)
+                    
                 out = torch.cat(out, dim=0)
                 out = torch.clamp(out, 0, 1)
                 out_np = out.view(H, W, 3).cpu().numpy() * 255
-
                 depth = torch.cat(depths, dim=0)
                 max = torch.max(depth)
                 min = torch.min(depth)
-                # print(max, min)
                 depth = (depth - min) / (max - min)
                 depth = torch.clamp(depth, 0, 1)
                 depth_np = depth.view(H, W).cpu().numpy()*255
-                end1 = time.time()
-
-                times += (end1 - start)
-                # times2 += (end2 - start)
-
                 out_np = out_np.astype(np.uint8)
                 out_im = Image.fromarray(np.uint8(out_np))
-                out_im.save(os.path.join(args.basedir, args.expname, "eval_output", "all", "re_{:02d}_{:02d}.png".format(v,u)))
-
+                out_im.save(os.path.join(args.basedir, args.expname, "eval_output", "all", f're_{v:02d}_{u:02d}.png'))
                 depth_np = depth_np.astype(np.uint8)
                 output_npy_file = os.path.join(arraydir, f'array_e_{v}_{u}.npy')
 
@@ -552,12 +547,13 @@ def main():
                 # Generate depth image
                 depth_im = Image.fromarray(np.uint8(depth_np))
                 depth_im.save(os.path.join(args.basedir, args.expname, "eval_output", "depth", "re_{:02d}_{:02d}.png".format(v,u)))
+                
+                end1 = time.time()
+                times += (end1 - start)
     
     torch.save(render_kwargs_train["network_fn"].state_dict(), os.path.join(basedir, expname, "nerf.pth"))
     times = times / (view_num**2)
-    # times2 = times2 / (17*17)
-    print(f'Time elapsed: {times:.5f}')
-    # print(times2)
+    print(f'Time elapsed: {times:.3f}')
 
 
 if __name__=="__main__":
