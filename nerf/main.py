@@ -14,8 +14,8 @@ np.random.seed(0)
 torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def get_LF_val(u, v, H, W, width=1024, height=1024):
     x = np.linspace(0, width-1, width)
@@ -23,20 +23,14 @@ def get_LF_val(u, v, H, W, width=1024, height=1024):
     
     xv, yv = np.meshgrid(x, y)
     img_grid = torch.from_numpy(np.stack([yv, xv], axis=-1))
-    
     uv_grid = torch.ones_like(img_grid)
     uv_grid[:, :, 0], uv_grid[:, :, 1] = v, u
 
-    #shift
+    # Shift
     uv_grid = uv_grid - 8
     img_grid[...,0] = img_grid[...,0] - H //2
     img_grid[...,1] = img_grid[...,1] - W //2
-    
     val_inp_t = torch.cat([uv_grid, img_grid], dim = -1).float()
-
-    # val_inp_t[..., :2] /= 17
-    # val_inp_t[..., 2] /= width
-    # val_inp_t[..., 3] /= height
 
     del img_grid, xv, yv
     return val_inp_t.view(-1, val_inp_t.shape[-1])
@@ -51,6 +45,7 @@ def batchify(fn, chunk):
     def ret(inputs):
         return torch.cat([fn(inputs[i:i+chunk]) for i in range(0, inputs.shape[0], chunk)], 0)
     return ret
+
 
 def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, netchunk=1024*64):
     """
@@ -69,6 +64,7 @@ def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, netchunk=1024*64):
     outputs = torch.reshape(outputs_flat, list(inputs.shape[:-1]) + [outputs_flat.shape[-1]])
     return outputs
 
+
 def batchify_rays(rays_flat, chunk=1024*32, **kwargs):
     """
     Render rays in smaller minibatches to avoid OOM.
@@ -83,6 +79,7 @@ def batchify_rays(rays_flat, chunk=1024*32, **kwargs):
 
     all_ret = {k : torch.cat(all_ret[k], 0) for k in all_ret}
     return all_ret
+
 
 def render(coords, chunk=1024*32, use_viewdirs=False, **kwargs):
     """
@@ -192,8 +189,6 @@ def create_nerf(args):
     model_path = torch.load(os.path.join(basedir, expname, "model.pth")) 
     model.load_state_dict(model_path)
 
-    ##########################
-
     render_kwargs_train = {
         'network_query_fn' : network_query_fn,
         'perturb' : args.perturb,
@@ -212,6 +207,7 @@ def create_nerf(args):
 
     return render_kwargs_train, render_kwargs_test, start_epoch, grad_vars, optimizer
 
+
 def raw2outputs(raw, z_vals, rays_d, raw_noise_std=0, pytest=False):
     """Transforms model's predictions to semantically meaningful values.
     Args:
@@ -229,10 +225,9 @@ def raw2outputs(raw, z_vals, rays_d, raw_noise_std=0, pytest=False):
 
     dists = z_vals[...,1:] - z_vals[...,:-1]
     dists = torch.cat([dists, torch.Tensor([1e10]).expand(dists[...,:1].shape)], -1)  # [N_rays, N_samples]
-
     dists = dists * torch.norm(rays_d[...,None,:], dim=-1)
 
-    rgb = torch.sigmoid(raw[...,:3])  # [N_rays, N_samples, 3]
+    rgb = torch.sigmoid(raw[...,:3])  # (N_rays, N_samples, 3)
     noise = 0.
     if raw_noise_std > 0.:
         noise = torch.randn(raw[...,3].shape) * raw_noise_std
@@ -331,7 +326,7 @@ def render_rays(ray_batch,
         # stratified samples in those intervals
         t_rand = torch.rand(z_vals.shape)
 
-        # Pytest, overwrite u with numpy's fixed random numbers
+        # Pytest, overwrite 'u' with numpy's fixed random numbers
         if pytest:
             np.random.seed(0)
             t_rand = np.random.rand(*list(z_vals.shape))
@@ -342,11 +337,11 @@ def render_rays(ray_batch,
 
     pts = rays_o[...,None,:] + rays_d[...,None,:] * z_vals[...,:,None] # [N_rays, N_samples, 3]
 
-    #Normalization
+    # Normalization of points in rays
     pts[...,2] = (pts[...,2] / xy_norm) * z_factor
 
 
-#     raw = run_network(pts)
+    # raw = run_network(pts)
 
     raw = network_query_fn(pts, viewdirs, network_fn)
     rgb_map, depth_map = raw2outputs(raw, z_vals, rays_d, raw_noise_std, white_bkgd, pytest=pytest, show_VS = show_VolumeSampling, fine = False)
@@ -366,7 +361,6 @@ def render_rays(ray_batch,
             print(f"! [Numerical Error] {k} contains nan or inf.")
 
     return ret
-
 
 
 def config_parser():
