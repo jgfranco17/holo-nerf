@@ -1,0 +1,28 @@
+expname = lego_LF_test
+basedir = ./logs
+datadir = ./data/stanford/knights/images
+
+N_samples = 64
+N_importance = 0
+
+raw_noise_std = 1e0
+
+use_viewdirs = True
+
+#render_only = False
+#render_test = False
+point_cloud = True
+lindisp = False
+#perturb = 0.
+
+angRes = 17
+img_H = 1024
+img_W = 1024
+trainset_dir = LF_patches/lego_patch_9
+
+#xy_norm = H//2 + disparity * views//2
+xy_norm = 552
+z_factor = 1.
+
+near = -5.
+far = 5.
