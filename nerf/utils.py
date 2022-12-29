@@ -91,6 +91,7 @@ class NeRF(nn.Module):
                 the NRF model. Default is False.
         """
         super(NeRF, self).__init__()
+        print("NeRF model initialized.")
         self.D = D
         self.W = W
         self.input_ch = input_ch
