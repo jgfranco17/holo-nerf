@@ -30,66 +30,33 @@ This project employs a PyTorch-based orthogonal NeRF model, and utilizes the fun
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See [deployment](#deployment) for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
 
-### Prerequisites
 
-What things you need to install the software and how to install them.
+### Python 3
+For this project, you will need [Python 3.8](https://github.com/pyenv/pyenv) or greater. To install the Python libraries necessary, run the installs via `pip` command.
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
-### Installing
+### NeRF Model
 
-A step by step series of examples that tell you how to get a development env running.
+This project relies on a trained NeRF model. For more information on training a NeRF model for a scene, see the documentation.
 
-Say what the step will be
+## 🚀 Usage <a name="usage"></a>
 
+To generate a colored depth map of the scene, run the following command.
+
+```bash
+python3 mapping.py
 ```
-Give the example
-```
-
-And repeat
-
-```
-until finished
-```
-
-End with an example of getting some data out of the system or using it for a little demo.
-
-## 🔧 Running the tests <a name = "tests"></a>
-
-Explain how to run the automated tests for this system.
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## 🎈 Usage <a name="usage"></a>
-
-Add notes about how to use the system.
-
-## 🚀 Deployment <a name = "deployment"></a>
-
-Add additional notes about how to deploy this on a live system.
 
 ## ⛏️ Built Using <a name = "built_using"></a>
 
 - [PyTorch](https://pytorch.org/) - Deep Learning
 - [NumPy](https://numpy.org/) - Matrix Manipulation
+- [OpenCV](https://opencv.org/) - Image Processing
 - [Open3D](http://www.open3d.org/) - 3D Data Processing
 
 ## ✍️ Authors <a name = "authors"></a>
