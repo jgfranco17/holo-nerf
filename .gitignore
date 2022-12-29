@@ -97,7 +97,10 @@ venv.bak/
 # Desktop caches
 __pycache__
 
-
+# Video files
+videos
+*.mp4
+*.avi
 
 # Rope project settings
 .ropeproject
