@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 from tqdm import tqdm
+from imutils import resize
 from time import perf_counter
 
 
@@ -22,7 +23,10 @@ class DepthMap(object):
         self.directory = os.path.join(os.getcwd(), directory)
         self.raw_array_data, self.array_compiled = self.__get_np_data(self.directory)
         self.image = self.preprocess(self.array_compiled)
+        
+        # Prepare video writer 
         self.writer = None
+        self.video_file_path = None
         self.export = export
         
     @property
@@ -187,10 +191,10 @@ class DepthMap(object):
             fps (int, optional): Exported video frame rate, defaults to 15
         """
         # Set export video attributes
-        video_file_name = f'depthmap_nerf_{len(self.raw_array_data)}_fps{fps}.avi'
-        video_file_path = os.path.join(os.getcwd(), "videos", video_file_name)
-        if os.path.exists(video_file_path):
-            print(f'Video file already exists: {video_file_path}')
+        video_file_name = f'depthmap_nerf_{len(self.raw_array_data)}imgs_{fps}fps.avi'
+        self.video_file_path = os.path.join(os.getcwd(), "videos", video_file_name)
+        if os.path.exists(self.video_file_path):
+            print(f'Video file already exists: {self.video_file_path}')
             
         else:
             try:
@@ -198,7 +202,7 @@ class DepthMap(object):
                 os.makedirs(os.path.join(os.getcwd(), "videos"), exist_ok=True)
                 fourcc = cv2.VideoWriter_fourcc(*"DIVX")
                 height, width, _ = self.image.shape
-                self.writer = cv2.VideoWriter(video_file_path, fourcc, fps, (width, height))
+                self.writer = cv2.VideoWriter(self.video_file_path, fourcc, fps, (width, height))
                 
                 # Compile all arrays into image format and export
                 image_count = len(self.raw_array_data)
@@ -217,6 +221,32 @@ class DepthMap(object):
                 
             except Exception as e:
                 print(f'Failed to compile images to video: {e}')
+                
+    def render_video(self, fps:int=15):
+        video = cv2.VideoCapture(self.video_file_path)
+        video.set(cv2.CAP_PROP_FPS, 10)
+        print(f'Loading video from source: {self.video_file_path}')
+        try:
+            while video.isOpened():
+                # Grab frame from video
+                ret, frame = video.read()
+                if not ret:
+                    break 
+                frame = resize(frame, height=720)
+                cv2.imshow("NeRF Depth Render", frame)
+
+                key = cv2.waitKey(10)
+                if key in (27, 32):
+                    print("Closing video...")
+                    break
+                
+        except Exception as e:
+            print(f'Error during video playback: {e}')
+            
+        finally:    
+            video.release()
+            cv2.destroyAllWindows()
+            print("Video session ended.")
         
     
 if __name__ == "__main__":
@@ -234,5 +264,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     depthmap = DepthMap(directory="samples/depthdata", color=args.color)
-    # depthmap.display(scale=0.8)
-    depthmap.export_views(fps=args.fps)
+    depthmap.display(scale=0.8)
+    # depthmap.export_views(fps=args.fps)
+    # depthmap.render_video()
