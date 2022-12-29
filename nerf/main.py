@@ -1,4 +1,5 @@
 import os
+import cv2
 import numpy as np
 import time
 import torch
@@ -365,6 +366,66 @@ def render_rays(ray_batch,
     return ret
 
 
+def normalize(image:np.ndarray, bits:int) -> np.ndarray:
+    """
+    Normalize the given map for OpenCV.
+
+    Args:
+        image (np.ndarray): Frame image
+        bits (int): image bits
+
+    Returns:
+        np.ndarray: Normalized depth map
+    """
+    depth_min = image.min()
+    depth_max = image.max()
+    max_val = (2 ** (8 * bits)) - 1
+    
+    if depth_max - depth_min > np.finfo("float").eps:
+        out = max_val * (image - depth_min) / (depth_max - depth_min)
+    else:
+        out = np.zeros(image.shape, dtype=image.type)
+        
+    if bits == 1:
+        return out.astype("uint8")
+    return out.astype("uint16")
+
+
+def invert_array(array:np.ndarray) -> np.ndarray:
+    """
+    Invert the given array.
+
+    Args:
+        array (np.ndarray): Original array
+
+    Returns:
+        np.ndarray: Inverted array
+    """
+    inverted_array = np.zeros(array.shape)
+    rows, cols = array.shape
+    local_max = array.max()
+    for row in range(rows):
+        for col in range(cols):
+            inverted_array[row, col] = local_max - array[row, col] + 1
+            
+    return inverted_array
+
+
+def colormap(image:np.ndarray) -> np.ndarray:
+    """
+    Recolor the depth map from grayscale to colored.
+
+    Args:
+        image (np.ndarray): Grayscale image
+
+    Returns:
+        np.ndarray: Colored map image
+    """
+    depth_map = normalize(image, bits=2)
+    depth_map = (depth_map/256).astype(np.uint8)
+    return cv2.applyColorMap(depth_map, cv2.COLORMAP_HOT)
+
+
 def config_parser():
     import configargparse
     parser = configargparse.ArgumentParser()
@@ -457,13 +518,18 @@ def main():
     os.makedirs(os.path.join(basedir, expname), exist_ok=True)
     testimgdir = os.path.join(basedir, expname, "val_imgs")
     os.makedirs(testimgdir, exist_ok = True)
-    savedir = os.path.join(args.basedir, args.expname, "eval_output")
+    savedir = os.path.join(args.basedir, args.expname, "output")
     os.makedirs(savedir, exist_ok=True)
-    os.makedirs(os.path.join(savedir, "all"), exist_ok=True)
-    os.makedirs(os.path.join(savedir, "depth"), exist_ok=True)
-    arraydir = "./arraydata/testdata"
-    depthdir = "./arraydata/depthdata"
-    colordir = "./arraydata/colordata"
+    depthdir = os.path.join(savedir, "depths")
+    colordir = os.path.join(savedir, "colors")
+    imagedir = os.path.join(savedir, "images")
+    os.makedirs(depthdir, exist_ok=True)
+    os.makedirs(colordir, exist_ok=True)
+    os.makedirs(imagedir, exist_ok = True)
+    rgb_images = os.path.join(imagedir, "rgb")
+    depth_images = os.path.join(imagedir, "depth")
+    os.makedirs(rgb_images, exist_ok=True)
+    os.makedirs(depth_images, exist_ok = True)
 
     # Load data
     H = args.img_H
@@ -503,38 +569,33 @@ def main():
             val_inp_t = get_LF_val(u=u, v=v, H=H, W=W, width=W, height =H).to(device)
             val_inp_t = val_inp_t.view(-1, val_inp_t.shape[-1]).to(device)
 
-            b_size = val_inp_t.shape[0] // 4
+            batch_size = val_inp_t.shape[0] // 4
             with torch.no_grad():
-                out = []
                 depths = []
-                for b in range(4):
-                    # rgb, disp, acc, depth, extras = render(val_inp_t[b_size*b:b_size*(b+1)]*1, chunk = args.chunk, use_viewdirs=args.use_viewdirs, **render_kwargs_test)
-                    rgb, depth, _ = render(val_inp_t[b_size*b:b_size*(b+1)]*1, chunk = args.chunk, use_viewdirs=args.use_viewdirs, **render_kwargs_test)
-                    out.append(rgb)
+                colors = []
+                for batch in range(4):
+                    rgb, depth, _ = render(val_inp_t[batch_size*batch:batch_size*(batch+1)]*1, 
+                                           chunk = args.chunk, use_viewdirs=args.use_viewdirs, 
+                                           **render_kwargs_test)
+                    colors.append(rgb)
                     depths.append(depth)
-                    
+                
+                # Save image result
                 out = torch.cat(out, dim=0)
                 out = torch.clamp(out, 0, 1)
                 out_np = out.view(H, W, 3).cpu().numpy() * 255
+                out_np = out_np.astype(np.uint8)
+                out_im = Image.fromarray(np.uint8(out_np))
+                out_im.save(os.path.join(rgb_images, f'view_{v:02d}_{u:02d}.png'))
+
+                # Save depth map data
                 depth = torch.cat(depths, dim=0)
                 max = torch.max(depth)
                 min = torch.min(depth)
                 depth = (depth - min) / (max - min)
                 depth = torch.clamp(depth, 0, 1)
                 depth_np = depth.view(H, W).cpu().numpy()*255
-                out_np = out_np.astype(np.uint8)
-                out_im = Image.fromarray(np.uint8(out_np))
-                out_im.save(os.path.join(args.basedir, args.expname, "eval_output", "all", f're_{v:02d}_{u:02d}.png'))
                 depth_np = depth_np.astype(np.uint8)
-                output_npy_file = os.path.join(arraydir, f'array_e_{v}_{u}.npy')
-
-                # Save color image data
-                np.save(output_npy_file, out_np) 
-                print(f'Exported {out_np.shape} array to {output_npy_file}')
-
-                # Save depth map data
-                depth_npy_file = os.path.join(depthdir, f'depth_e_{v}_{u}.npy')
-                np.save(depth_npy_file, depth_np) 
                 depth_npy_file = os.path.join(depthdir, f'depth_e_{v}_{u}.npy')
                 np.save(depth_npy_file, depth_np) 
                 print(f'DEPTH: Exported {depth_np.shape} array to {depth_npy_file}')
@@ -543,10 +604,8 @@ def main():
                 np.save(rgb_npy_file, out_np) 
                 print(f'COLOR: Exported {out_np.shape} array to {rgb_npy_file}')
                 print(out_np)
-
-                # Generate depth image
                 depth_im = Image.fromarray(np.uint8(depth_np))
-                depth_im.save(os.path.join(args.basedir, args.expname, "eval_output", "depth", "re_{:02d}_{:02d}.png".format(v,u)))
+                depth_im.save(os.path.join(depth_images, f'depth_{v:02d}_{u:02d}.png'))
                 
                 end1 = time.time()
                 times += (end1 - start)
