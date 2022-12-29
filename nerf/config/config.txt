@@ -1,6 +1,7 @@
-expname = lego_LF
+expname = lego_LF_test_ver2_viewdirs
 basedir = ./logs
-datadir = ./data/images
+datadir = ./data/stanford/knights/images
+
 
 N_samples = 64
 N_importance = 0
@@ -11,7 +12,7 @@ use_viewdirs = True
 
 #render_only = False
 #render_test = False
-point_cloud = False
+point_cloud = True
 lindisp = False
 #perturb = 0.
 
