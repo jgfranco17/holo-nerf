@@ -1,6 +1,6 @@
 import os
-import pickle
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 from argparse import ArgumentParser
 from pointcloud import PointCloudVisualizer
@@ -51,7 +51,7 @@ class NeRFCloud(object):
             print(f'Reading from: {source}')
             storage_dir = os.listdir(source)
             count = 0
-            for filename in tqdm(storage_dir):
+            for filename in tqdm(storage_dir, desc="Loading files"):
                 # Store data if file is an NPY file
                 if filename.endswith(".npy"):
                     file = str(os.path.join(source, filename))
@@ -62,6 +62,7 @@ class NeRFCloud(object):
         
             print(f'Loaded in {count} array files.')
             return np_array_list, np.around((np_array_data / count), decimals=0).astype(int)
+        
         except Exception as e:
             print(f'Failed to load NPY data: {e}')
     
@@ -85,65 +86,58 @@ class NeRFCloud(object):
                 
         return inverted_array
 
-    @staticmethod
-    def __normalize(image:np.ndarray, bits:int) -> np.ndarray:
-        """
-        Normalize the given map for OpenCV.
-
-        Args:
-            image (np.ndarray): Frame image
-            bits (int): image bits
-
-        Returns:
-            np.ndarray: Normalized depth map
-        """
-        depth_min = image.min()
-        depth_max = image.max()
-        max_val = (2 ** (8 * bits)) - 1
-        
-        if depth_max - depth_min > np.finfo("float").eps:
-            out = max_val * (image - depth_min) / (depth_max - depth_min)
-        else:
-            out = np.zeros(image.shape, dtype=image.type)
-            
-        if bits == 1:
-            return out.astype("uint8")
-        return out.astype("uint16")
-    
-    def run(self):
-        """
-        Render the point cloud.
-        """
-        # Render map as point cloud
-        self.compiled_depth = np.around(self.compiled_depth, decimals=0).astype(int)
-        preprocessed_array = self.__invert(self.compiled_depth)
+    def get_image_data(self):
+        preprocessed_array = self.__invert(np.around(self.compiled_depth, decimals=0).astype(int))
         preprocessed_colors = np.around((self.compiled_color / 256), decimals=3)
         raw_depth_map = []
         raw_color_map = []
         depth_rows, depth_cols = preprocessed_array.shape
         color_rows, color_cols, _ = preprocessed_colors.shape
         
-        print("Processing depth matrix...")
-        for row in tqdm(range(depth_rows)):
+        for row in tqdm(range(depth_rows), desc="Processing depth matrix"):
             for col in range(depth_cols):
                 z = int(preprocessed_array[row, col])
                 raw_depth_map.append([row, col, z])
         processed_depth_map = np.array(raw_depth_map)
         
-        print("Processing color matrix...")
-        for row in tqdm(range(color_rows)):
+        for row in tqdm(range(color_rows), desc="Processing color matrix"):
             for col in range(color_cols):
                 raw_color_map.append(list(preprocessed_colors[row, col]))
         processed_color_map = np.array(raw_color_map)
         
-        print("Data formatted, displaying colored point cloud!")
-        self.visualizer.draw_cloud(array=processed_depth_map, colors=processed_color_map)
+        return processed_depth_map, processed_color_map
+    
+    def export_scene_data(self):
+        export_data = []
+        coordinates, color = self.get_image_data()
+        color = np.around(color * 256).astype(int)
+        
+        count, dimension = coordinates.shape
+        for point in tqdm(range(count), desc="Preparing dataframe"):
+            export_data.append(list(coordinates[point]+1) + list(color[point]))
+           
+        output_directory = os.path.join(os.getcwd(), "exports") 
+        filename = f'nerf_scene_{"x".join([str(num) for num in self.compiled_depth.shape])}.csv'
+        os.makedirs(output_directory, exist_ok=True)
+        exported_file = os.path.join(output_directory, filename)
+        headers = ["X", "Y", "Z", "R", "G", "B"]
+        print(f'Exporting data to file \"{filename}\"')
+        df = pd.DataFrame(export_data, columns=headers)
+        df.to_csv(exported_file, index=False)
+        print(f'Exported {len(coordinates):,} scene points to: \"{exported_file}\"')
+        
+    def render_scene(self):
+        """
+        Render the point cloud.
+        """
+        # Render map as point cloud
+        depth, color = self.get_image_data()
+        self.visualizer.draw_cloud(array=depth, colors=color)
 
 
 if __name__ == "__main__":
     def get_parser() -> ArgumentParser:
         parser = ArgumentParser()
-        
         parser.add_argument(
             "--source", "-s",
             type=str, required=True,
@@ -172,7 +166,6 @@ if __name__ == "__main__":
             default=1.0,
             help="Scale factor for z-axis"
         )
-        
         return parser
 
     parser = get_parser()
@@ -183,5 +176,6 @@ if __name__ == "__main__":
                            xfactor=args.xfactor,
                            yfactor=args.yfactor,
                            zfactor=args.zfactor)
-    cloud_data.run()
+    cloud_data.render_scene()
+    # cloud_data.export_scene_data()
     
