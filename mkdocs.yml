@@ -1,0 +1,55 @@
+site_name: HoloNeRF
+theme:
+  name: material
+  font:
+    text: Roboto
+    code: Roboto Mono
+  palette:
+    # Dark Mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Toggle light mode
+      primary: green
+      accent: green
+    # Light Mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Toggle dark mode
+      primary: lime
+      accent: lime
+  nav:
+    - Home: index.md
+  features:
+    - announce.dismiss
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - navigation.footer
+    - navigation.instant
+    - navigation.indexes
+    - navigation.tracking
+    - search.highlight
+    - search.suggest
+  nav_style: primary
+  highlightjs: true
+  hljs_languages:
+    - yaml
+    - json
+    - python
+    - bash
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences # Enables syntax highlighting for code blocks
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.emoji
+  - pymdownx.tabbed:
+      alternate_style: true # Enables tabbed code sections
+extra_css:
+  - styles/custom.css
+copyright: Copyright &copy; 2023 Joaquin Franco

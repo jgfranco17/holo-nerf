@@ -33,3 +33,8 @@ clean:
 pytest *args:
 	@echo "Running unittest suite..."
 	poetry run pytest {{ args }}
+
+# Run the docs server locally
+docs:
+    mkdocs build --strict --clean
+    mkdocs serve --open

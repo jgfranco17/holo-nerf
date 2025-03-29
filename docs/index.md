@@ -1,6 +1,7 @@
-# Project Background
+# Overview
 
-A general overview of the research project.
+A PyTorch-based implementation of Neural Radiance Fields for applications in generating 3D spatial
+data for holography applications
 
 ## Abstract
 
@@ -11,8 +12,9 @@ the network on a dataset of scene view images, and then using the trained networ
 cloud for the given input scene. The generated data is highly realistic and has a high degree of detail,
 making it suited for use in creating holograms. The proposed method is evaluated on a range of images,
 and the results show that it can effectively generate 3D data that is suitable for use in holography
-applications. Overall, this work presents a promising approach for generating 3D spatial data for
-holography using NeRF.
+applications.
+
+Overall, this work presents a promising approach for generating 3D spatial data for holography using NeRF.
 
 ## Core Concepts
 
