@@ -17,3 +17,10 @@ runs:
       shell: bash
       run: |
         pip install --upgrade pip
+        pip install poetry
+        poetry --version
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        just install

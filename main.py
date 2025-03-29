@@ -4,7 +4,7 @@ import time
 from argparse import ArgumentParser
 
 # NeRF library
-import nerf
+import holonerf
 
 
 def config() -> ArgumentParser:
