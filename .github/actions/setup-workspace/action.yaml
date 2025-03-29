@@ -1,0 +1,19 @@
+---
+name: "Setup Workspace"
+description: "Configure Python and prepare the workspace"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+
+    - name: Set up Just
+      uses: extractions/setup-just@v2
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip install --upgrade pip
